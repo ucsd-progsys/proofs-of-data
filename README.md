@@ -1,4 +1,7 @@
-# LH-VFA
+# Proofs of Data
+
+A port of Andrew Appel's [Verified Functional Algorithms](https://softwarefoundations.cis.upenn.edu/vfa-current/index.html) to LiquidHaskell
+
 
 ## Chapter dependencies
 
