@@ -9,6 +9,11 @@ import qualified TotalMaps as T
 
 import Prelude hiding (abs)
 
+{-# ANN module "HLint: ignore Use camelCase" #-}
+{-# ANN module "HLint: ignore Use foldr"     #-}
+{-# ANN module "HLint: ignore Use const"     #-}
+
+
 ------------------------------------------------------------------------------
 -- | Binary Search Trees -------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -42,7 +47,8 @@ size (Node k v l r) = 1 + size l + size r
              } 
   @-} 
 
-{-@ searchTree :: _  -> TT @-} 
+-- | For every `m :: Map k v` the function `searchTree m` returns `True`
+{-@ searchTree :: m:_  -> TT @-} 
 searchTree :: (Ord k) => Map k v -> Bool 
 searchTree Leaf           = True  
 searchTree (Node k v l r) =  all_keys   l (< k) 
@@ -56,8 +62,9 @@ all_keys Leaf _           = True
 all_keys (Node k _ l r) p = p k && all_keys l p && all_keys r p
 
 -- | For every `m :: Map k v` the function `searchTree m` returns `True`
+{-@ lem_searchtree :: (Ord k) => _ -> TT @-}
 lem_searchtree :: (Ord k) => Map k v -> Bool
-lem_searchtree m = searchTree m == True 
+lem_searchtree = searchTree
 
 ------------------------------------------------------------------------------
 -- | Map Operations ------------------------------------------------------------

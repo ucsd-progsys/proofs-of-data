@@ -35,6 +35,8 @@ module ProofCombinators (
   , withProof 
   , impossible 
 
+  -- * Bailing out
+  , todo 
   -- * Extensional Equality
   -- , ExtEqT
 
@@ -174,6 +176,13 @@ withProof x _ = x
 {-@ impossible :: {v:a | false} -> b @-}
 impossible :: a -> b
 impossible _ = undefined
+
+{-@ todo :: a -> b @-}
+todo :: a -> b
+todo _ = undefined
+
+
+
 
 -------------------------------------------------------------------------------
 -- | Convenient Syntax for Inductive Propositions 

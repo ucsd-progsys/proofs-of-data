@@ -7,8 +7,6 @@ module Positive where
 
 import           Prelude hiding ((++))
 import           ProofCombinators
--- import           Lists
--- import           Perm
 
 -- | Positive Integers in Binary -----------------------------------------------
 
@@ -25,15 +23,20 @@ posNat :: Pos -> Int
 posNat XH      = 1
 posNat (X b p) = boolNat b + 2 * posNat p 
 
--- | An example, 10 -----------------------------------------------------------
+-- | Some examples -----------------------------------------------------------
 
-{-@ reflect fourteen @-}
-fourteen :: () -> Pos 
-fourteen _ = X False (X True (X True XH))
+{-@ reflect p5 @-}
+p5 :: () -> Pos 
+p5 _ = X True (X False XH)
 
-{-@ ex14 :: _ -> TT @-}
-ex14 :: () -> Bool 
-ex14 _ = posNat (fourteen ()) == 14 
+{-@ reflect p14 @-}
+p14 :: () -> Pos 
+p14 _ = X False (X True (X True XH))
+
+{-@ p_examples :: _ -> TT @-}
+p_examples :: () -> Bool 
+p_examples _ = posNat (p14 ()) == 14
+            && posNat (p5 ())  == 5
 
 -- | Successor ---------------------------------------------------------------
 
@@ -45,7 +48,7 @@ suc (X True  p) = X False (suc p)
 
 {-@ exSuc14 :: _ -> TT @-}
 exSuc14 :: () -> Bool
-exSuc14 _ = posNat (suc (fourteen ())) == 15
+exSuc14 _ = posNat (suc (p14 ())) == 15
 
 {-@ lem_suc :: p:_ -> { posNat (suc p) == 1 + posNat p } @-}
 lem_suc :: Pos -> Proof
