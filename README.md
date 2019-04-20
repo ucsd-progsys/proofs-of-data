@@ -18,8 +18,8 @@ A port of Andrew Appel's [Verified Functional Algorithms](https://softwarefounda
 - [x] Selection
 - [x] TotalMaps
 - [x] SearchTree
-- [ ] Trie
-- [ ] Multiset
+- [ ] Trie              ----- HEREHEREHEREHERE
+- [ ] Multiset          ----- HEREHEREHEREHERE
 - [ ] ADT
 - [ ] Priqueue
 - [ ] Binom
