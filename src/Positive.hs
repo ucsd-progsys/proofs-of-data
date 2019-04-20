@@ -20,6 +20,7 @@ boolNat False = 0
 boolNat True  = 1
 
 {-@ reflect posNat @-}
+{- posNat :: Pos -> {v:Int | v > 0} @-}
 posNat :: Pos -> Int 
 posNat XH      = 1
 posNat (X b p) = boolNat b + 2 * posNat p 
@@ -107,3 +108,48 @@ lem_addc c (X b1 p1) (X b2 p2) = lem_addc (carry c b1 b2) p1 p2
 thm_add :: Pos -> Pos -> Proof
 thm_add p1 p2 = lem_addc False p1 p2
 
+-- | Comparison ---------------------------------------------------------------
+
+data Cmp = Lt | Gt | Eq
+
+{-@ reflect cmpNat @-}
+cmpNat :: Int -> Int -> Cmp
+cmpNat x y 
+  | x <  y    = Lt
+  | x == y    = Eq
+  | otherwise = Gt
+
+{-@ reflect cmp @-}
+cmp :: Pos -> Pos -> Cmp
+cmp (X True  p) (X True  q) = cmp p q
+cmp (X False p) (X False q) = cmp p q
+cmp (X True  p) (X False q) = force Lt (cmp p q) 
+cmp (X False p) (X True  q) = force Gt (cmp p q) 
+cmp (X _     _) XH          = Gt
+cmp XH          (X _     _) = Lt
+cmp XH          XH          = Eq
+
+{-@ reflect force @-}
+force :: Cmp -> Cmp -> Cmp 
+force Lt Lt = Lt 
+force Lt _  = Gt 
+force Gt Gt = Gt
+force Gt _  = Lt
+force Eq c  = c
+
+-- | Correctness of Comparison ------------------------------------------------
+
+{-@ lem_posNat_pos :: p:_ -> {posNat p > 0} @-}
+lem_posNat_pos :: Pos -> Proof
+lem_posNat_pos XH      = ()
+lem_posNat_pos (X _ p) = lem_posNat_pos p
+
+{-@ thm_cmp :: p:_ -> q:_ -> { cmp p q == cmpNat (posNat p) (posNat q) } @-}
+thm_cmp :: Pos -> Pos -> Proof
+thm_cmp (X True  p) (X True  q) = thm_cmp p q 
+thm_cmp (X False p) (X False q) = thm_cmp p q
+thm_cmp (X True  p) (X False q) = thm_cmp p q
+thm_cmp (X False p) (X True  q) = thm_cmp p q
+thm_cmp (X _     p) XH          = lem_posNat_pos p
+thm_cmp XH          (X _     p) = lem_posNat_pos p
+thm_cmp XH          XH          = () 
