@@ -10,7 +10,7 @@ import           ProofCombinators
 
 -- | Positive Integers in Binary -----------------------------------------------
 
-data Pos = X Bool Pos | XH deriving (Show)
+data Pos = X Bool Pos | XH deriving (Eq, Show)
 
 {-@ reflect boolNat @-}
 boolNat :: Bool -> Int 

@@ -184,7 +184,7 @@ lem_abs_get Leaf key = ()
 lem_abs_set :: (Ord k) => Map k v -> k -> v -> k -> Proof 
 lem_abs_set m k v key 
   | key == k  = () --  T.set (abs m) k (Just v) key
-              ? T.lem_get_set_eq (abs m) k (Just v)  
+              -- ? T.lem_get_set_eq (abs m) k (Just v)  
               -- === Just v 
               ? lem_get_eq m k v
               -- === get m' key
@@ -192,13 +192,13 @@ lem_abs_set m k v key
               -- === abs m' key 
 
   | otherwise = () -- T.set (abs m) k (Just v) key 
-              ? T.lem_get_set_neq (abs m) k (Just v)
+              -- WHY NOT NEEDED ? T.lem_get_set_neq (abs m) k (Just v)
               -- === abs m key
               ? lem_abs_get m key
               -- === get m key
               ? lem_get_neq m key k v
               -- === get m' key
-              ? lem_abs_get (set m k v) key
+              ?  lem_abs_get (set m k v) key
               -- === abs m' key 
 
   where m'    = set m k v

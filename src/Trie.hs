@@ -140,6 +140,10 @@ lem_natPosNat = todo ()
 lem_posNatPos :: Int -> Proof
 lem_posNatPos = todo () 
 
+{-@ lem_posNat_inj :: p1:_ -> p2:_ -> { (p1 = p2) <=> (posNat p1 = posNat p2)} @-}
+lem_posNat_inj :: Pos -> Pos -> Proof
+lem_posNat_inj p1 p2 = lem_natPosNat p1 &&& lem_natPosNat p2 
+
 ------------------------------------------------------------------------------
 -- | Abstraction Function ----------------------------------------------------  
 ------------------------------------------------------------------------------
@@ -181,28 +185,24 @@ lem_abs_get t p =   abs t (posNat p)
       EquivTrie (T.set (abs t) (posNat p) (Just v)) (set t p v) 
   @-} 
 lem_abs_set :: Trie v -> Pos -> v -> Pos -> Proof 
-lem_abs_set t p v key = todo ()
+lem_abs_set t p v p'
+  | p == p'   = () -- T.set (abs t) (posNat p) (Just v) (posNat p')
+            --  ? T.lem_get_set_eq (abs t) (posNat p) (Just v)
+            -- === Just v 
+              ? lem_get_eq t p v
+              ? lem_abs_get t' p'
+            -- === get (set t p v) p' 
+            *** QED 
 
-{- 
-lem_abs_set m k v key 
-  | key == k  = () --  T.set (abs m) k (Just v) key
-              ? T.lem_get_set_eq (abs m) k (Just v)  
-              -- === Just v 
-              ? lem_get_eq m k v
-              -- === get m' key
-              ? lem_abs_get m' key 
-              -- === abs m' key 
+  | otherwise = () -- T.set (abs t) (posNat p) (Just v) (posNat p') 
+              ? lem_posNat_inj p p'
+            -- WHY NOT NEEDED   ? T.lem_get_set_neq (abs t) (posNat p) (Just v) (posNat p')
+            -- === T.get (abs t) (posNat p')
+              ? lem_abs_get t p'
+            -- === get t  p'
+              ? lem_get_neq t p' p v
+            -- === get t' p'
+            -- *** QED 
 
-  | otherwise = () -- T.set (abs m) k (Just v) key 
-              ? T.lem_get_set_neq (abs m) k (Just v)
-              -- === abs m key
-              ? lem_abs_get m key
-              -- === get m key
-              ? lem_get_neq m key k v
-              -- === get m' key
-              ? lem_abs_get (set m k v) key
-              -- === abs m' key 
+  where t'    = set t p v
 
-  where m'    = set m k v
-
--}
