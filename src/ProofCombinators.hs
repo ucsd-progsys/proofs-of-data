@@ -35,6 +35,8 @@ module ProofCombinators (
   , withProof 
   , impossible 
 
+  -- * Extensional Equality
+  -- , ExtEqT
 
 ) where
 
@@ -181,4 +183,10 @@ impossible _ = undefined
 {-@ type Prop E = {v:_ | prop v = E} @-}
 
 
+
+------------------------------------------------------------------------------
+-- | When are two functions extensionally equal ------------------------------
+------------------------------------------------------------------------------
+
+{-@ type ExtEq F G = kExtEq:_ -> { F kExtEq == G kExtEq } @-}
 
