@@ -18,7 +18,7 @@ boolNat False = 0
 boolNat True  = 1
 
 {-@ reflect posNat @-}
-{- posNat :: Pos -> {v:Int | v > 0} @-}
+{-@ posNat :: Pos -> {v:Int | 0 < v} @-}
 posNat :: Pos -> Int 
 posNat XH      = 1
 posNat (X b p) = boolNat b + 2 * posNat p 
@@ -156,3 +156,4 @@ thm_cmp (X False p) (X True  q) = thm_cmp p q
 thm_cmp (X _     p) XH          = lem_posNat_pos p
 thm_cmp XH          (X _     p) = lem_posNat_pos p
 thm_cmp XH          XH          = () 
+

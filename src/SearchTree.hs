@@ -157,7 +157,7 @@ combine key val lm rm k
   | otherwise = Just val
 
 ------------------------------------------------------------------------------
--- | `abs` is a legitimate ---------------------------------------------------
+-- | `abs` is a legitimate abstraction ---------------------------------------
 ------------------------------------------------------------------------------
 
 -- | The empty Map is equal to the empty TotalMap
@@ -202,5 +202,3 @@ lem_abs_set m k v key
               -- === abs m' key 
 
   where m'    = set m k v
-
-
