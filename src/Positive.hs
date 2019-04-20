@@ -1,6 +1,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple"        @-}
-{- LIQUID "--diff"       @-}
+{-@ LIQUID "--diff"       @-}
 {-@ infixr ++             @-}
 
 module Positive where
@@ -12,41 +12,98 @@ import           ProofCombinators
 
 -- | Positive Integers in Binary -----------------------------------------------
 
-data Pos = X1 Pos | X0 Pos | XH deriving (Show)
+data Pos = X Bool Pos | XH deriving (Show)
 
-{-@ reflect pos2Nat @-}
-pos2Nat :: Pos -> Int 
-pos2Nat XH     = 1
-pos2Nat (X1 p) = 1 + 2 * pos2Nat p 
-pos2Nat (X0 p) = 0 + 2 * pos2Nat p 
+{-@ reflect boolNat @-}
+boolNat :: Bool -> Int 
+boolNat False = 0
+boolNat True  = 1
+
+{-@ reflect posNat @-}
+posNat :: Pos -> Int 
+posNat XH      = 1
+posNat (X b p) = boolNat b + 2 * posNat p 
 
 -- | An example, 10 -----------------------------------------------------------
 
 {-@ reflect fourteen @-}
 fourteen :: () -> Pos 
-fourteen _ = X0 (X1 (X1 XH))
+fourteen _ = X False (X True (X True XH))
 
 {-@ ex14 :: _ -> TT @-}
 ex14 :: () -> Bool 
-ex14 _ = pos2Nat (fourteen ()) == 14 
+ex14 _ = posNat (fourteen ()) == 14 
 
 -- | Successor ---------------------------------------------------------------
 
+{-@ reflect suc @-}
 suc :: Pos -> Pos
-suc XH     = X0 XH 
-suc (X0 p) = X1 p 
-suc (X1 p) = X0 (suc p) 
+suc XH          = X False XH 
+suc (X False p) = X True  p 
+suc (X True  p) = X False (suc p) 
 
-
--- >>> suc XH
--- <interactive>:2675:2-4: error:
---     • Variable not in scope: suc :: t0 -> t
---     • Perhaps you meant one of these:
---         ‘sum’ (imported from Prelude), ‘succ’ (imported from Prelude)
--- <BLANKLINE>
--- <interactive>:2675:6-7: error: Data constructor not in scope: XH
---
 {-@ exSuc14 :: _ -> TT @-}
 exSuc14 :: () -> Bool
-exSuc14 _ = pos2Nat (suc (fourteen ())) == 15
--- exSuc14 _ = pos2Nat (suc (fourteen ())) == 15
+exSuc14 _ = posNat (suc (fourteen ())) == 15
+
+{-@ lem_suc :: p:_ -> { posNat (suc p) == 1 + posNat p } @-}
+lem_suc :: Pos -> Proof
+lem_suc XH      = ()
+lem_suc (X b p) = lem_suc p
+
+-- | Addition -----------------------------------------------------------------
+
+xor :: Bool -> Bool -> Bool
+xor b1 b2 = ((b1 && not b2)) || (b2 && not b1)
+
+imp :: Bool -> Bool -> Bool
+imp b1 b2 = (not b1) || b2 
+
+{-@ reflect carry @-}
+carry :: Bool -> Bool -> Bool -> Bool 
+carry False d1 d2 = d1 && d2 
+carry True  d1 d2 = d1 || d2  
+
+{-@ reflect digit @-}
+digit :: Bool -> Bool -> Bool -> Bool 
+digit False d1 d2 = d1 /= d2
+digit True  d1 d2 = d1 == d2 
+
+{-@ reflect addc1 @-}
+addc1 True p  = suc p 
+addc1 False p = p
+
+{-@ reflect addc @-}
+addc :: Bool -> Pos -> Pos -> Pos 
+addc c XH        p         = addc1 c (suc p)
+addc c p         XH        = addc1 c (suc p) 
+addc c (X d1 p1) (X d2 p2) = X d' p' 
+  where 
+    c'                     = carry c d1 d2 
+    d'                     = digit c d1 d2
+    p'                     = addc c' p1 p2 
+
+
+{-@ reflect add @-}
+add :: Pos -> Pos -> Pos 
+add p1 p2 = addc False p1 p2
+
+-- | Correctness of addition --------------------------------------------------
+
+{-@ lem_addc1 :: b:_ -> p:_ -> { posNat (addc1 b p) = boolNat b + posNat p } @-}
+lem_addc1 :: Bool -> Pos -> Proof 
+lem_addc1 True  p = lem_suc p
+lem_addc1 False p = ()
+
+{-@ lem_addc :: c:_ -> p1:_ -> p2:_ -> 
+      { posNat (addc c p1 p2) = boolNat c + posNat p1 + posNat p2 } 
+  @-}
+lem_addc :: Bool -> Pos -> Pos -> Proof 
+lem_addc c XH p                = lem_suc p &&& lem_addc1 c (suc p)
+lem_addc c p  XH               = lem_suc p &&& lem_addc1 c (suc p)
+lem_addc c (X b1 p1) (X b2 p2) = lem_addc (carry c b1 b2) p1 p2  
+
+{-@ thm_add :: p1:_ -> p2:_ -> { posNat (add p1 p2) == posNat p1 + posNat p2 } @-}
+thm_add :: Pos -> Pos -> Proof
+thm_add p1 p2 = lem_addc False p1 p2
+
