@@ -11,6 +11,9 @@ import           ProofCombinators
 import           Positive
 import qualified TotalMaps as T
 
+{-# ANN module "HLint: ignore Use camelCase" #-}
+{-# ANN module "HLint: ignore Use Eta reduce" #-}
+
 
 -- | The `Trie` data type  ----------------------------------------------------
 
