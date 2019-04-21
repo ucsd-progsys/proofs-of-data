@@ -2,132 +2,19 @@
 {-@ LIQUID "--ple"        @-} 
 {-@ LIQUID "--diff"       @-} 
 
-module RedBlack where
+------------------------------------------------------------------------------
+-- | Proofs that RedBlack.Tree implements a TotalMap i.e. Abs Props ---------- 
+------------------------------------------------------------------------------
+
+module RedBlackAbs where
 
 import           ProofCombinators
 import qualified TotalMaps as T
 import           Prelude hiding (abs)
+import           RedBlack 
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 {-# ANN module "HLint: ignore Use Eta reduce" #-}
-
-{-@ data Tree k v = 
-      Leaf 
-    | Node { tCol   :: Color 
-           , tKey   :: k 
-           , tVal   :: v 
-           , tLeft  :: Tree {o:k | o < tKey} v 
-           , tRight :: Tree {o:k | tKey < o} v
-           }
-  @-}
-
-------------------------------------------------------------------------------
--- | Red Black Trees ---------------------------------------------------------
-------------------------------------------------------------------------------
-
-data Color = R | B 
-  deriving (Eq)
-
-data Tree k v 
-  = Leaf 
-  | Node Color k v (Tree k v) (Tree k v) 
-
-{-@ measure size @-}
-{-@ size :: Tree k v -> Nat @-}
-size :: Tree k v -> Int
-size Leaf             = 0
-size (Node _ _ _ l r) = 1 + size l + size r    
-
-------------------------------------------------------------------------------
--- | Tree Operations ---------------------------------------------------------
-------------------------------------------------------------------------------
-
-{-@ reflect emp @-}
-emp :: Tree k v
-emp = Leaf 
-
-{-@ reflect get @-}
-get :: (Ord k) => Tree k v -> k -> Maybe v
-get (Node _ k v l r) key
-  | key == k  = Just v
-  | key <  k  = get l key
-  | otherwise = get r key
-get Leaf _    = Nothing 
-
-------------------------------------------------------------------------------
--- | Insertion ---------------------------------------------------------------
-------------------------------------------------------------------------------
-
-{-@ reflect set @-} 
-set :: (Ord k) => Tree k v -> k -> v -> Tree k v 
-set t k v = makeBlack (ins t k v) 
-
-{-@ reflect makeBlack @-}
-makeBlack :: Tree k v -> Tree k v 
-makeBlack Leaf             = Leaf  
-makeBlack (Node _ k v l r) = Node B k v l r
-
-{- ins :: (Ord a) => a -> t:RBT a -> {v: ARBTN a {bh t} | IsB t => isRB v} @-}
-
-{-@ reflect ins @-} 
-{-@ ins :: forall <p :: k -> Bool> . Tree (k<p>) v -> k<p> -> v -> Tree (k<p>) v @-}
-ins :: (Ord k) => Tree k v -> k -> v -> Tree k v 
-ins (Node c k v l r) key val
-  | key < k      = bal c k v (ins l key val) r
-  | k < key      = bal c k v l (ins r key val)
-  | otherwise    = Node B key val l r 
-ins Leaf key val = Node R key val Leaf Leaf
-
--- | Balancing ---------------------------------------------------------------
-
-{-@ reflect bal @-}
-{-@ bal :: forall <p :: k -> Bool>._ -> key:k<p> -> _ ->
-             Tree {o:k<p>|o < key} _ -> Tree {o:k<p>| key < o} _ -> Tree (k<p>) v 
-  @-}
-bal :: Color -> k -> v -> Tree k v -> Tree k v -> Tree k v
-bal R key val l r = Node R key val l r 
-bal B key val l r = blkbal key val l r 
-
-{-@ reflect blkbal @-}
--- {-@ blkbal :: k:_ -> _ -> Tree {o:_|o < k} _ -> Tree {o:_| k < o} _ -> _ @-}
-{-@ blkbal :: k:_ -> _ -> TreeLt k -> TreeGt k -> _ @-}
-blkbal :: k -> v -> Tree k v -> Tree k v -> Tree k v
-blkbal k v (Node R ky vy (Node R kx vx a b) c) r  = Node R ky vy (Node B kx vx a b) (Node B k v c r)
-blkbal k v (Node R kx vx a (Node R ky vy b c)) r  = Node R ky vy (Node B kx vx a b) (Node B k v c r)
-blkbal k v a (Node R kz vz (Node R ky vy b c) d)  = Node R ky vy (Node B k v a b) (Node B kz vz c d)
-blkbal k v a (Node R ky vy b (Node R kz vz c d))  = Node R ky vy (Node B k v a b) (Node B kz vz c d)
-blkbal k v l r                                    = Node B k v l r
-
-------------------------------------------------------------------------------
--- | SearchTree Property -----------------------------------------------------
-------------------------------------------------------------------------------
-
-{-@ searchTree :: _  -> TT @-} 
-searchTree :: (Ord k) => Tree k v -> Bool 
-searchTree Leaf             = True  
-searchTree (Node _ k v l r) =  all_keys   l (< k) 
-                            && all_keys   r (k <) 
-                            && searchTree l 
-                            && searchTree r
-
-{-@ all_keys :: forall <p :: k -> Bool>. Tree (k<p>) v -> (k<p> -> TT) -> TT @-} 
-all_keys :: Tree k v -> (k -> Bool) -> Bool
-all_keys Leaf _             = True 
-all_keys (Node _ k _ l r) p = p k && all_keys l p && all_keys r p
-
--- | Every `t :: Tree k v` is a `searchTree` ---------------------------------- 
-
-{-@ lem_searchtree :: t:_ -> TT @-}
-lem_searchtree :: (Ord k) => Tree k v -> Bool
-lem_searchtree = searchTree
-
-{-@ type TreeLt K = Tree {o:_| o < K} _ @-}
-{-@ type TreeGt K = Tree {o:_| K < o} _ @-}
-
-{-
-------------------------------------------------------------------------------
--- | Abs Props ---------------------------------------------------------------
-------------------------------------------------------------------------------
 
 -- | @mkb@ preserves the key-value relationship ------------------------------
 
@@ -145,9 +32,9 @@ lem_mkb Leaf key = ()
       { get (blkbal k v l r) key == get l key }
   @-}
 lem_blkbal_lt :: (Ord k) => k -> v -> Tree k v -> Tree k v -> k -> Proof 
-lem_blkbal_lt = todo "uncomment below, PLE-SLOW"
+-- lem_blkbal_lt = todo "uncomment below, PLE-SLOW"
 
-{- TODO:PLE-SLOW
+{- TODO:PLE-SLOW -}
 lem_blkbal_lt k v (Node R ky vy (Node R kx vx a b) c) _ key 
   | key == ky                                               = ()
   | key > ky                                                = ()
@@ -163,15 +50,14 @@ lem_blkbal_lt k v (Node R kx vx a (Node R ky vy b c)) _ key
 lem_blkbal_lt k v a (Node R kz vz (Node R ky vy b c) d) key = () 
 lem_blkbal_lt k v a (Node R ky vy b (Node R kz vz c d)) key = ()  
 lem_blkbal_lt k v l r                                   key = () 
--}
+{- -}
 
 {-@ lem_blkbal_gt :: k:_ -> v:_ -> l:TreeLt k -> r:TreeGt k -> key:{k < key} -> 
       { get (blkbal k v l r) key == get r key }
   @-}
 lem_blkbal_gt :: (Ord k) => k -> v -> Tree k v -> Tree k v -> k -> Proof 
-lem_blkbal_gt = todo "uncomment below, PLE-SLOW"
-
-{- TODO:PLE-SLOW 
+{- lem_blkbal_gt = todo "uncomment below, PLE-SLOW" -}
+{- TODO:PLE-SLOW -} 
 lem_blkbal_gt k v (Node R ky vy (Node R kx vx a b) c) r key = () 
 lem_blkbal_gt k v (Node R kx vx a (Node R ky vy b c)) r key = () 
 lem_blkbal_gt k v a (Node R kz vz (Node R ky vy b c) d) key
@@ -187,7 +73,7 @@ lem_blkbal_gt k v a (Node R ky vy b (Node R kz vz c d)) key
   | key <  kz                                               = () 
   | key >  kz                                               = () 
 lem_blkbal_gt k v l r                                   key = () 
--}
+{- -}
 
 {-@ lem_blkbal_eq :: k:_ -> v:_ -> l:TreeLt k -> r:TreeGt k -> key:{k = key} -> 
       { get (blkbal k v l r) key == Just v }
@@ -287,8 +173,67 @@ lem_ins_neq (Node tc tk tv tl tr) k v key
                         -- === get tr key
                         -- *** QED
 
--}
+-------------------------------------------------------------------------------
+-- | Abstraction Function (same as SearchTree) --------------------------------
+-------------------------------------------------------------------------------
+
+type TMap k v = T.TotalMap k (Maybe v)
+
+{-@ reflect abs @-}
+abs :: (Ord k) => Tree k v -> TMap k v
+abs (Node _ k v l r) key = combine k v (abs l) (abs r) key 
+abs Leaf             key = Nothing
+
+{-@ reflect combine @-}
+combine :: (Ord k) => k -> v -> TMap k v -> TMap k v -> TMap k v 
+combine key val lm rm k
+  | k < key   = lm k 
+  | key < k   = rm k
+  | otherwise = Just val
+
 ------------------------------------------------------------------------------
--- | RedBlack Props ----------------------------------------------------------
+-- | `abs` is a legitimate abstraction (same as SearchTree) ------------------
 ------------------------------------------------------------------------------
--- TODO 
+
+-- | The empty Map is equal to the empty TotalMap
+
+{-@ lem_abs_emp :: ExtEq (abs emp) (T.def Nothing) @-}
+lem_abs_emp :: k -> Proof 
+lem_abs_emp _ = ()
+
+-- | A 'get' returns the same value as the 'abs' total map 
+
+{-@ lem_abs_get :: m:_ -> ExtEq (abs m) (get m)  @-} 
+lem_abs_get :: (Ord k) => Tree k v -> k -> Proof 
+lem_abs_get (Node _ k v l r) key 
+  | key < k          = lem_abs_get l key 
+  | k < key          = lem_abs_get r key 
+  | otherwise        = () 
+lem_abs_get Leaf key = ()
+
+-- | A 'set' on a  Map' yields a 'set' on the abstraction
+
+{-@ lem_abs_set :: m:_ -> k:_ -> v:_ -> 
+      ExtEq (T.set (abs m) k (Just v)) (abs (set m k v)) 
+  @-} 
+lem_abs_set :: (Ord k) => Tree k v -> k -> v -> k -> Proof 
+lem_abs_set m k v key 
+  | key == k  = () --  T.set (abs m) k (Just v) key
+              -- ? T.lem_get_set_eq (abs m) k (Just v)  
+              -- === Just v 
+              ? lem_get_eq m k v
+              -- === get m' key
+              ? lem_abs_get m' key 
+              -- === abs m' key 
+
+  | otherwise = () -- T.set (abs m) k (Just v) key 
+              -- WHY NOT NEEDED ? T.lem_get_set_neq (abs m) k (Just v)
+              -- === abs m key
+              ? lem_abs_get m key
+              -- === get m key
+              ? lem_get_neq m k v key 
+              -- === get m' key
+              ? lem_abs_get (set m k v) key
+              -- === abs m' key 
+
+  where m'    = set m k v
