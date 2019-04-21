@@ -8,6 +8,10 @@ module Positive where
 import           Prelude hiding ((++))
 import           ProofCombinators
 
+{-# ANN module "HLint: ignore Use camelCase" #-}
+{-# ANN module "HLint: ignore Use foldr"     #-}
+{-# ANN module "HLint: ignore Use const"     #-}
+
 -- | Positive Integers in Binary -----------------------------------------------
 
 data Pos = X Bool Pos | XH deriving (Eq, Show)
@@ -156,4 +160,73 @@ thm_cmp (X False p) (X True  q) = thm_cmp p q
 thm_cmp (X _     p) XH          = lem_posNat_pos p
 thm_cmp XH          (X _     p) = lem_posNat_pos p
 thm_cmp XH          XH          = () 
+
+------------------------------------------------------------------------------
+-- | Bijection between Pos and Integers
+------------------------------------------------------------------------------
+
+{-@ reflect natBool @-}
+{-@ natBool :: {v:Nat | v <= 1} -> _ @-} 
+natBool :: Int -> Bool
+natBool 0 = False 
+natBool 1 = True 
+
+{-@ reflect natPos @-}
+{-@ natPos :: {v:Int | 0 < v} -> Pos @-}
+natPos :: Int -> Pos
+natPos 1 = XH
+natPos n = X (natBool b') (natPos n') 
+  where 
+     b'  = n `mod` 2 
+     n'  = n `div` 2
+
+{-@ lem_natPosNat :: p:_ -> {p = natPos (posNat p)} @-}
+lem_natPosNat :: Pos -> Proof
+lem_natPosNat XH          = () 
+lem_natPosNat (X False p) = lem_natPosNat p
+lem_natPosNat (X True  p) = lem_natPosNat p &&& lem_mod2 (posNat p)
+
+-- | A few handy facts about div and mod --------------------
+
+{-@ lem_div2 :: n:{0 < n} -> { div (1 + (2 * n)) 2 == n } @-}
+lem_div2 :: Int -> Proof
+lem_div2 _ = ()
+
+{-@ lem_mod2 :: n:{0 < n} -> { (1 + (2 * n)) mod 2 == 1 } @-}
+lem_mod2 :: Int -> Proof
+lem_mod2 _ = ()
+
+{-@ lem_posNatPos :: n:{0 < n} -> {n = posNat (natPos n) } @-}
+lem_posNatPos :: Int -> Proof
+lem_posNatPos 1 = () 
+lem_posNatPos n = lem_posNatPos (n `div` 2)
+
+{- 
+{-@ lem_divmod2 :: n:{0 < n} -> { n == (n mod 2) + 2 * (div n 2) } @-}
+lem_divmod2 :: Int -> Proof
+lem_divmod2 _ = () 
+
+{-@ lem_boolNatBool :: b:{0 == b || b == 1} -> {b == boolNat (natBool b)} @-}
+lem_boolNatBool :: Int -> Proof
+lem_boolNatBool 0 = ()
+lem_boolNatBool 1 = ()
+
+
+-- &&& lem_boolNatBool b') 
+                  posNat (natPos n) 
+              === posNat (X (natBool b') (natPos n')) 
+              === boolNat (natBool b') + 2 * (posNat (natPos n'))
+                ? lem_posNatPos n' -- &&& lem_boolNatBool b') 
+              === b' + 2 * n'
+              === n 
+              *** QED
+  where
+    b' = n `mod` 2 
+    n' = n `div` 2
+-}
+-- | posNat / natPos are injective --------------------------------------------
+
+{-@ thm_posNat_inj :: p1:_ -> p2:_ -> { (p1 = p2) <=> (posNat p1 = posNat p2)} @-}
+thm_posNat_inj :: Pos -> Pos -> Proof
+thm_posNat_inj p1 p2 = lem_natPosNat p1 &&& lem_natPosNat p2 
 

@@ -6,14 +6,10 @@
 
 module Trie where
 
--- import qualified Data.Set as S
 import           Prelude hiding (abs)
 import           ProofCombinators
 import           Positive
 import qualified TotalMaps as T
--- import           Lists
--- import           Perm
--- import           Perm
 
 
 -- | The `Trie` data type  ----------------------------------------------------
@@ -113,37 +109,6 @@ lem_get_neq (Node x l r) (X b1 p1) (X b2 p2) v
   | b1 == b2                                   = lem_get_neq l p1 p2 v &&& lem_get_neq r p1 p2 v  
   | otherwise                                  = ()
 
-
-------------------------------------------------------------------------------
--- | Bijection between `Pos` and `Int`; move into `Positive.hs`?
-------------------------------------------------------------------------------
-
-{-@ reflect natBool @-}
-natBool :: Int -> Bool 
-natBool 0 = False 
-natBool _ = True 
-
-{-@ reflect natPos @-}
-{-@ natPos :: {v:Int | 0 < v} -> Pos @-}
-natPos :: Int -> Pos
-natPos 1 = XH
-natPos n = X (natBool d) (natPos n') 
-  where 
-     d   = n `mod` 2 
-     n'  = n `div` 2
-
-{-@ lem_natPosNat :: p:_ -> {p = natPos (posNat p)} @-}
-lem_natPosNat :: Pos -> Proof
-lem_natPosNat = todo () 
-
-{-@ lem_posNatPos :: n:{0 < n} -> {n = posNat (natPos n) } @-}
-lem_posNatPos :: Int -> Proof
-lem_posNatPos = todo () 
-
-{-@ lem_posNat_inj :: p1:_ -> p2:_ -> { (p1 = p2) <=> (posNat p1 = posNat p2)} @-}
-lem_posNat_inj :: Pos -> Pos -> Proof
-lem_posNat_inj p1 p2 = lem_natPosNat p1 &&& lem_natPosNat p2 
-
 ------------------------------------------------------------------------------
 -- | Abstraction Function ----------------------------------------------------  
 ------------------------------------------------------------------------------
@@ -156,7 +121,7 @@ abs t n = get t (natPos n)
 
 -- | When is a `A :: TMap` "equivalent to" a `T :: Trie` ---------------------
 
-{-@ type EquivTrie A T = posKey:_ -> { A (posNat posKey) == get T posKey } @-}
+{-@ type EquivTrie M T = posKey:_ -> {M (posNat posKey) == get T posKey} @-}
 
 ------------------------------------------------------------------------------
 -- | `abs` is a legitimate abstraction ---------------------------------------
@@ -195,7 +160,7 @@ lem_abs_set t p v p'
             *** QED 
 
   | otherwise = () -- T.set (abs t) (posNat p) (Just v) (posNat p') 
-              ? lem_posNat_inj p p'
+              ? thm_posNat_inj p p'
             -- WHY NOT NEEDED   ? T.lem_get_set_neq (abs t) (posNat p) (Just v) (posNat p')
             -- === T.get (abs t) (posNat p')
               ? lem_abs_get t p'

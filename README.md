@@ -19,9 +19,9 @@ A port of Andrew Appel's [Verified Functional Algorithms](https://softwarefounda
 - [x] Selection
 - [x] TotalMaps
 - [x] SearchTree
-- [ ] Trie              <----- HEREHEREHEREHERE
-- [ ] ADT
-- [ ] Priqueue
+- [x] Trie
+- [-] ADT
+- [ ] Priqueue <----- HEREHEREHEREHERE
 - [ ] Binom
 - [ ] RedBlack
 
