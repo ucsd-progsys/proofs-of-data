@@ -17,9 +17,14 @@ import           Prelude hiding (abs)
            , tKey   :: k 
            , tVal   :: v 
            , tLeft  :: Tree {o:k | o < tKey} v 
-           , tRight :: {t : Tree {o:k | tKey < o} v | bh t == bh tLeft}
+           , tRight :: {t : Tree {o:k | tKey < o} v | bh t == bh tLeft} 
            }
   @-}
+
+{-@ type TreeLt K = Tree {o:_| o < K} _ @-}
+
+{-@ type TreeGt K = Tree {o:_| K < o} _ @-}
+
 
 ------------------------------------------------------------------------------
 -- | Red Black Trees ---------------------------------------------------------
@@ -81,13 +86,8 @@ ins Leaf key val = Node R key val Leaf Leaf
 -- | Balancing ---------------------------------------------------------------
 
 {-@ reflect bal @-}
-{-@ bal :: forall <p :: k -> Bool>.
-             c:_ -> 
-             key:k<p> -> 
-             _ ->
-             l:Tree {o:k<p>|o < key} _ -> 
-             {tt: Tree {o:k<p>| key < o} _ | bh tt = bh l} -> 
-             {res : Tree (k<p>) v | bh res = col c + bh l}
+{-@ bal :: c:_ -> k:_ -> _ -> l:TreeLt k -> {r:TreeGt k | bh r = bh l} -> 
+           {t: _ | bh t = col c + bh l}
   @-}
 bal :: Color -> k -> v -> Tree k v -> Tree k v -> Tree k v
 bal R key val l r = Node R key val l r 
@@ -125,12 +125,11 @@ all_keys (Node _ k _ l r) p = p k && all_keys l p && all_keys r p
 lem_searchtree :: (Ord k) => Tree k v -> Bool
 lem_searchtree = searchTree
 
-{-@ type TreeLt K = Tree {o:_| o < K} _ @-}
-{-@ type TreeGt K = Tree {o:_| K < o} _ @-}
-
 ------------------------------------------------------------------------------
 -- | RedBlack Props ----------------------------------------------------------
 ------------------------------------------------------------------------------
+
+-- | Black-height Property ---------------------------------------------------
 
 {-@ measure bh @-}
 {-@ bh :: Tree k v -> Nat @-}
@@ -143,32 +142,26 @@ col :: Color -> Int
 col R = 0
 col B = 1
 
--- TODO 
+-- | Red-Black invariant 
+{- TODO 
 
-{- 
--- {-@ lbal                              :: k:a -> l:ARBT {v:a | v < k} -> RBTN {v:a | k < v} {bh l} -> RBTN a {1 + bh l} @-}
--- {-@ rbal                              :: k:a -> l:RBT {v:a | v < k} -> ARBTN {v:a | k < v} {bh l} -> RBTN a {1 + bh l} @-}
-
-{-@ measure isBH        :: RBTree a -> Bool
-    isBH (Leaf)         = true
-    isBH (Node c x l r) = (isBH l && isBH r && bh l = bh r)
-  @-}
+-- {-@ lbal :: k:a -> l:ARBT {v:a | v < k} -> RBTN {v:a | k < v} {bh l} -> RBTN a {1 + bh l} @-}
+-- {-@ rbal :: k:a -> l:RBT {v:a | v < k} -> ARBTN {v:a | k < v} {bh l} -> RBTN a {1 + bh l} @-}
 
 {-@ measure isARB        :: (RBTree a) -> Bool
     isARB (Leaf)         = true
     isARB (Node c x l r) = (isRB l && isRB r)
   @-}
+
 {-@ measure isRB        :: RBTree a -> Bool
     isRB (Leaf)         = true
     isRB (Node c x l r) = isRB l && isRB r && (c == R => (IsB l && IsB r))
   @-}
+
 {-@ measure isB        :: RBTree a -> Bool
     isB (Leaf)         = false
     isB (Node c x l r) = c == B
   @-}
-
-
-
 
 -}
 
