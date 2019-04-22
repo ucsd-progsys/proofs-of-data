@@ -16,8 +16,8 @@ import           Prelude hiding (abs)
     | Node { tCol   :: Color 
            , tKey   :: k 
            , tVal   :: v 
-           , tLeft  :: Tree {o:k | o < tKey} v 
-           , tRight :: {t : Tree {o:k | tKey < o} v | bh t == bh tLeft} 
+           , tLeft  :: TreeLt tKey
+           , tRight :: {t : TreeGt tKey | bh t == bh tLeft}
            }
   @-}
 
@@ -42,6 +42,9 @@ data Tree k v
 size :: Tree k v -> Int
 size Leaf             = 0
 size (Node _ _ _ l r) = 1 + size l + size r    
+
+
+
 
 ------------------------------------------------------------------------------
 -- | Tree Operations ---------------------------------------------------------
