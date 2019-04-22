@@ -2,6 +2,8 @@
 {-@ LIQUID "--ple"        @-} 
 {-@ LIQUID "--diff"       @-} 
 
+-- TODO:PLE-SLOW this file takes 30+mins !!!
+
 ------------------------------------------------------------------------------
 -- | Proofs that RedBlack.Tree implements a TotalMap i.e. Abs Props ---------- 
 ------------------------------------------------------------------------------
@@ -32,8 +34,6 @@ lem_mkb Leaf key = ()
       { get (blkbal k v l r) key == get l key }
   @-}
 lem_blkbal_lt :: (Ord k) => k -> v -> Tree k v -> Tree k v -> k -> Proof 
--- lem_blkbal_lt = todo "uncomment below, PLE-SLOW"
-
 {- TODO:PLE-SLOW -}
 lem_blkbal_lt k v (Node R ky vy (Node R kx vx a b) c) _ key 
   | key == ky                                               = ()
@@ -50,13 +50,11 @@ lem_blkbal_lt k v (Node R kx vx a (Node R ky vy b c)) _ key
 lem_blkbal_lt k v a (Node R kz vz (Node R ky vy b c) d) key = () 
 lem_blkbal_lt k v a (Node R ky vy b (Node R kz vz c d)) key = ()  
 lem_blkbal_lt k v l r                                   key = () 
-{- -}
 
 {-@ lem_blkbal_gt :: k:_ -> v:_ -> l:TreeLt k -> r:TreeGt k -> key:{k < key} -> 
       { get (blkbal k v l r) key == get r key }
   @-}
 lem_blkbal_gt :: (Ord k) => k -> v -> Tree k v -> Tree k v -> k -> Proof 
-{- lem_blkbal_gt = todo "uncomment below, PLE-SLOW" -}
 {- TODO:PLE-SLOW -} 
 lem_blkbal_gt k v (Node R ky vy (Node R kx vx a b) c) r key = () 
 lem_blkbal_gt k v (Node R kx vx a (Node R ky vy b c)) r key = () 
@@ -73,14 +71,11 @@ lem_blkbal_gt k v a (Node R ky vy b (Node R kz vz c d)) key
   | key <  kz                                               = () 
   | key >  kz                                               = () 
 lem_blkbal_gt k v l r                                   key = () 
-{- -}
 
 {-@ lem_blkbal_eq :: k:_ -> v:_ -> l:TreeLt k -> r:TreeGt k -> key:{k = key} -> 
       { get (blkbal k v l r) key == Just v }
   @-}
 lem_blkbal_eq :: (Ord k) => k -> v -> Tree k v -> Tree k v -> k -> Proof 
--- lem_blkbal_eq = todo "no, really do this"
-
 lem_blkbal_eq k v (Node R ky vy (Node R kx vx a b) c) r key = () 
 lem_blkbal_eq k v (Node R kx vx a (Node R ky vy b c)) r key = () 
 lem_blkbal_eq k v a (Node R kz vz (Node R ky vy b c) d) key = ()
