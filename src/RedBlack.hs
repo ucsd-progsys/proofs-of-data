@@ -66,11 +66,15 @@ get Leaf _    = Nothing
 -- | Insertion ---------------------------------------------------------------
 ------------------------------------------------------------------------------
 
+{-@ type RBT k v = {t:Tree k v | isRB t} @-}
+
 {-@ reflect set @-} 
+{-@ set :: RBT _ _ -> _ -> _ -> RBT _ _ @-}
 set :: (Ord k) => Tree k v -> k -> v -> Tree k v 
 set t k v = makeBlack (ins t k v) 
 
 {-@ reflect makeBlack @-}
+{-@ makeBlack :: {t:_ | isARB t} -> {res: _ | isRB res} @-}
 makeBlack :: Tree k v -> Tree k v 
 makeBlack Leaf             = Leaf  
 makeBlack (Node _ k v l r) = Node B k v l r
@@ -78,32 +82,72 @@ makeBlack (Node _ k v l r) = Node B k v l r
 {- ins :: (Ord a) => a -> t:RBT a -> {v: ARBTN a {bh t} | IsB t => isRB v} @-}
 
 {-@ reflect ins @-} 
-{-@ ins :: forall <p :: k -> Bool> . t: Tree (k<p>) v -> k<p> -> v -> {res : Tree (k<p>) v | bh res = bh t } @-}
+{-@ ins :: forall <p :: k -> Bool> . {t: Tree (k<p>) v | isRB t}  -> k<p> -> v -> {res : Tree (k<p>) v | isARB res && bh res = bh t && (isB t => isRB res) } @-}
 ins :: (Ord k) => Tree k v -> k -> v -> Tree k v 
 ins (Node c k v l r) key val
-  | key < k      = bal c k v (ins l key val) r
-  | k < key      = bal c k v l (ins r key val)
+  | key < k      = bal c k v (ins l key val) r  -- c == R => isRB (ins l key val)
+  | k < key      = bal c k v l (ins r key val)  -- c == R => isRB (ins r key val)
   | otherwise    = Node c key val l r 
 ins Leaf key val = Node R key val Leaf Leaf
+
+-- HEREHERE does insert preserve color?
 
 -- | Balancing ---------------------------------------------------------------
 
 {-@ reflect bal @-}
-{-@ bal :: c:_ -> k:_ -> _ -> l:TreeLt k -> {r:TreeGt k | bh r = bh l} -> 
-           {t: _ | bh t = col c + bh l}
+{-@ bal :: c:_ -> k:_ -> _ -> {l:TreeLt k | c = R => isRB l} -> {r:TreeGt k | bh r = bh l && oneBad l r && (c = R => isRB r)} -> 
+           {t:_ | isARB t && bh t = col c + bh l}
   @-}
 bal :: Color -> k -> v -> Tree k v -> Tree k v -> Tree k v
-bal R key val l r = Node R key val l r 
+bal R key val l r = Node R key val l r          --- <<<< what is l/r are ARB?       
 bal B key val l r = blkbal key val l r 
 
+{-@ inline oneBad @-}
+oneBad :: Tree k v -> Tree k v -> Bool
+oneBad l r = (isARB l && isRB r) || (isRB l && isARB r)
+
 {-@ reflect blkbal @-}
-{-@ blkbal :: k:_ -> _ -> l:TreeLt k -> {r: TreeGt k | bh r = bh l} -> {res: _ | bh res = 1 + bh l} @-}
+{-@ blkbal :: k:_ -> _ -> l:TreeLt k -> {r: TreeGt k | bh r = bh l && oneBad l r} -> 
+      {res: _ | isRB res && bh res = 1 + bh l} 
+  @-}
 blkbal :: k -> v -> Tree k v -> Tree k v -> Tree k v
 blkbal k v (Node R ky vy (Node R kx vx a b) c) r  = Node R ky vy (Node B kx vx a b) (Node B k v c r)
 blkbal k v (Node R kx vx a (Node R ky vy b c)) r  = Node R ky vy (Node B kx vx a b) (Node B k v c r)
 blkbal k v a (Node R kz vz (Node R ky vy b c) d)  = Node R ky vy (Node B k v a b) (Node B kz vz c d)
 blkbal k v a (Node R ky vy b (Node R kz vz c d))  = Node R ky vy (Node B k v a b) (Node B kz vz c d)
 blkbal k v l r                                    = Node B k v l r
+
+
+{- reflect dblkbal @-}
+{-@ dblkbal :: dir:_ -> k:_ -> _ -> {l : (TreeLt k) | (not dir => isARB l) && (dir => isRB l) }
+            -> {r:TreeGt k | bh r = bh l && (not dir => isRB r) && (dir => isARB r)}
+            -> {res: _ | bh res = 1 + bh l && isRB res}
+  @-}
+dblkbal :: Bool -> k -> v -> Tree k v -> Tree k v -> Tree k v
+dblkbal False k v (Node R ky vy (Node R kx vx a b) c) r  = Node R ky vy (Node B kx vx a b) (Node B k v c r)
+dblkbal False k v (Node R kx vx a (Node R ky vy b c)) r  = Node R ky vy (Node B kx vx a b) (Node B k v c r)
+dblkbal True  k v a (Node R kz vz (Node R ky vy b c) d)  = Node R ky vy (Node B k v a b) (Node B kz vz c d)
+dblkbal True  k v a (Node R ky vy b (Node R kz vz c d))  = Node R ky vy (Node B k v a b) (Node B kz vz c d)
+dblkbal _     k v l r                                    = Node B k v l r
+
+{-@ predicate Invs V = Inv1 V && Inv2 V && Inv3 V   @-}
+{-@ predicate Inv1 V = (isARB V && isB V) => isRB V @-}
+{-@ predicate Inv2 V = isRB V => isARB V            @-}
+{-@ predicate Inv3 V = 0 <= bh V                    @-}
+
+{-@ invariant {v: Color | v = R || v = B}           @-}
+{-@ invariant {v: Tree k v | Invs v}                @-}
+
+{- 
+{-@ inv :: Tree k v -> {v:_ | Invs v} @-}
+inv :: Tree k v -> Tree k v 
+inv Leaf             = Leaf
+inv (Node c k v l r) = Node c k v (inv l) (inv r)
+
+{-@ invc :: t:Tree k v -> {v:RBTree a | Invs t }  @-}
+invc Leaf           =  Leaf
+invc (Node c x l r) =  Node c x  (invc l) (invc r)
+-}
 
 ------------------------------------------------------------------------------
 -- | SearchTree Property -----------------------------------------------------
@@ -146,25 +190,22 @@ col R = 0
 col B = 1
 
 -- | Red-Black invariant 
-{- TODO 
 
--- {-@ lbal :: k:a -> l:ARBT {v:a | v < k} -> RBTN {v:a | k < v} {bh l} -> RBTN a {1 + bh l} @-}
--- {-@ rbal :: k:a -> l:RBT {v:a | v < k} -> ARBTN {v:a | k < v} {bh l} -> RBTN a {1 + bh l} @-}
+{-@ measure isARB @-}
+isARB :: Tree k v -> Bool
+isARB Leaf             = True
+isARB (Node _ _ _ l r) = isRB l && isRB r
 
-{-@ measure isARB        :: (RBTree a) -> Bool
-    isARB (Leaf)         = true
-    isARB (Node c x l r) = (isRB l && isRB r)
-  @-}
+{-@ measure isRB @-}
+isRB :: Tree k v -> Bool
+isRB Leaf             = True
+isRB (Node c _ _ l r) = isRB l && isRB r && isNodeRB c l r 
 
-{-@ measure isRB        :: RBTree a -> Bool
-    isRB (Leaf)         = true
-    isRB (Node c x l r) = isRB l && isRB r && (c == R => (IsB l && IsB r))
-  @-}
+{-@ inline isNodeRB @-}
+isNodeRB :: Color -> Tree k v -> Tree k v -> Bool
+isNodeRB c l r = c /= R || (isB l && isB r) 
 
-{-@ measure isB        :: RBTree a -> Bool
-    isB (Leaf)         = false
-    isB (Node c x l r) = c == B
-  @-}
-
--}
-
+{-@ measure isB @-}
+isB :: Tree k v -> Bool
+isB Leaf             = True 
+isB (Node c _ _ l r) = c == B
