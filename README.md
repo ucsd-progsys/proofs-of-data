@@ -21,9 +21,9 @@ A port of Andrew Appel's [Verified Functional Algorithms](https://softwarefounda
 - [x] SearchTree
 - [x] Trie
 - [-] ADT
-- [ ] Priqueue <----- HEREHEREHEREHERE
+- [ ] Priqueue
 - [ ] Binom
-- [ ] RedBlack
+- [x] RedBlack      <------ PLE-SLOW
 
 ## Sizes
 
@@ -34,9 +34,8 @@ A port of Andrew Appel's [Verified Functional Algorithms](https://softwarefounda
 - [ ] 272    1459    9083 Priqueue.v
 - [x] 327    1878   11330 Maps.v
 - [ ] 392    2083   12687 Binom.v
-- [ ] 413    2387   14363 ADT.v
 - [x] 619    3199   20067 Perm.v
-- [ ] 693    4233   25942 Trie.v
-- [ ] 792    4627   26478 Redblack.v
+- [x] 693    4233   25942 Trie.v
+- [x] 792    4627   26478 Redblack.v
 - [x] 908    5123   31232 SearchTree.v
 ```
