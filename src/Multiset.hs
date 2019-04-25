@@ -48,19 +48,19 @@ contents :: (Eq a) => [a] -> Multiset a
 contents []     z = empty z 
 contents (x:xs) z = (singleton x `union` contents xs) z
 
+{-@ type Perm Xs Ys = ExtEq (contents Xs) (contents Ys) @-}
+
 -- | Insertion `sort` preserves multiset -------------------------------------
 
-{-@ lem_insert_contents :: x:_ -> ys:_ -> 
-        ExtEq (contents (insert x ys)) (contents (cons x ys)) 
-  @-}
+{-@ lem_insert_contents :: x:_ -> ys:_ -> Perm (insert x ys) (cons x ys) @-}
 lem_insert_contents :: (Ord a) => a -> [a] -> a -> Proof
-lem_insert_contents x []     = const ()
+lem_insert_contents x []  = const ()
 lem_insert_contents x (y:ys) 
   | x <= y                = const ()
   | otherwise             = lem_insert_contents x ys
 
-{-@ thm_insert_contents :: xs:_ -> ExtEq (contents xs) (contents (sort xs)) @-}
-thm_insert_contents :: (Ord a) => [a] -> a -> Proof
-thm_insert_contents []     = \_ -> ()
-thm_insert_contents (x:xs) = \z -> lem_insert_contents x (sort xs) z
-                               &&& thm_insert_contents xs z 
+{-@ thm_sort_contents :: xs:_ -> Perm xs (sort xs) @-}
+thm_sort_contents :: (Ord a) => [a] -> a -> Proof
+thm_sort_contents []     = \_ -> ()
+thm_sort_contents (x:xs) = \z -> lem_insert_contents x (sort xs) z
+                             &&& thm_sort_contents xs z 
